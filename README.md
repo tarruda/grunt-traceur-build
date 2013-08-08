@@ -55,8 +55,8 @@ the files in the correct order.
 
 It will by default generate source maps for debugging(as far as I know only
 google chrome and 
-[node-inspector](https://github.com/node-inspector/node-inspector support this
-feature). In node.js, stack traces will display the original filenames/location
+[node-inspector](https://github.com/node-inspector/node-inspector) support this
+feature. In node.js, stack traces will display the original filenames/location
 if you install the [node-source-map-support](https://github.com/evanw/node-source-map-support) package
 
 ### Usage Examples
