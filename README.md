@@ -1,35 +1,35 @@
-# grunt-traceur-compiler
+# grunt-traceur-build
 
-> Compiles ECMAScript 6 (harmony) projects into ECMAScript 5 files
+> Grunt task that uses google traceur compiler to build ECMAScript 6 (harmony) projects, optionally merging and generating source maps.
 
 ## Getting Started
-This plugin requires Grunt `~0.4.1`
-
-If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
 
 ```shell
-npm install grunt-traceur-compiler --save-dev
+npm install grunt-traceur-build --save-dev
 ```
 
 Once the plugin has been installed, it may be enabled inside your Gruntfile with this line of JavaScript:
 
 ```js
-grunt.loadNpmTasks('grunt-traceur-compiler');
+grunt.loadNpmTasks('grunt-traceur-build');
 ```
 
-## The "traceur_compiler" task
+## The "traceur_build" task
 
 ### Overview
-In your project's Gruntfile, add a section named `traceur_compiler` to the data object passed into `grunt.initConfig()`.
+In your project's Gruntfile, add a section named `traceur_build` to the data object passed into `grunt.initConfig()`. Eg:
 
 ```js
 grunt.initConfig({
-  traceur_compiler: {
+  traceur_build: {
     options: {
-      // Task-specific options go here.
+      sourceMaps: true,
+      deferredFunctions: true
     },
-    your_target: {
-      // Target-specific file lists and/or options go here.
+    project: {
+      cwd: 'src',
+      src: '**/*.js',
+      dest: './build/build.js'
     },
   },
 })
@@ -37,43 +37,57 @@ grunt.initConfig({
 
 ### Options
 
-#### options.separator
-Type: `String`
-Default value: `',  '`
+Almost all options are passed to the traceur compiler directly, see the section
+below for the default values.
 
-A string value that is used to do something with whatever.
+Keep in mind that when a javascript file(any name ending with .js) is specified
+as the destination, the task will build and combine everything into one file,
+taking into consideration 'import' statements to resolve dependencies and put
+the files in the correct order.
 
-#### options.punctuation
-Type: `String`
-Default value: `'.'`
-
-A string value that is used to do something else with whatever else.
+It will by default generate source maps for debugging(as far as I know only
+google chrome and 
+[node-inspector](https://github.com/node-inspector/node-inspector support this
+feature). In node.js, stack traces will display the original filenames/location
+if you install the [node-source-map-support](https://github.com/evanw/node-source-map-support) package
 
 ### Usage Examples
 
 #### Default Options
-In this example, the default options are used to do something with whatever. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result would be `Testing, 1 2 3.`
 
 ```js
 grunt.initConfig({
-  traceur_compiler: {
-    options: {},
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
-    },
-  },
-})
-```
-
-#### Custom Options
-In this example, custom options are used to do something else with whatever else. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result in this case would be `Testing: 1 2 3 !!!`
-
-```js
-grunt.initConfig({
-  traceur_compiler: {
+  traceur_build: {
     options: {
-      separator: ': ',
-      punctuation: ' !!!',
+      debug: false,
+      sourceMaps: true,
+      freeVariableChecker: true,
+      validate: false,
+      strictSemicolons: false,
+      unstarredGenerators: false,
+      ignoreNolint: false,
+      arrayComprehension: true,
+      arrowFunctions: true,
+      classes: true,
+      defaultParameters: true,
+      destructuring: true,
+      forOf: true,
+      propertyMethods: true,
+      propertyNameShorthand: true,
+      templateLiterals: true,
+      restParameters: true,
+      spread: true,
+      generatorComprehension: true,
+      generators: true,
+      modules: true,
+      blockBinding: false,
+      privateNameSyntax: false,
+      privateNames: false,
+      cascadeExpression: false,
+      trapMemberLookup: false,
+      deferredFunctions: false,
+      propertyOptionalComma: false,
+      types: false
     },
     files: {
       'dest/default_options': ['src/testing', 'src/123'],
@@ -81,9 +95,3 @@ grunt.initConfig({
   },
 })
 ```
-
-## Contributing
-In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
-
-## Release History
-_(Nothing yet)_

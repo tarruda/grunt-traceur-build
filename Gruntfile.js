@@ -25,7 +25,7 @@ module.exports = function(grunt) {
       tests: ['build'],
     },
 
-    traceur_compile: {
+    traceur_build: {
       options: {
         sourceMaps: true
       },
@@ -50,7 +50,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-clean');
 
-  grunt.registerTask('test', ['clean', 'traceur_compile']);
+  grunt.registerTask('test', ['clean', 'traceur_build']);
 
   grunt.registerTask('default', ['jshint', 'test']);
 };

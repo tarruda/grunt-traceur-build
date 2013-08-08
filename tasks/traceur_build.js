@@ -25,7 +25,7 @@ var TestErrorReporter = traceur.util.TestErrorReporter;
 var Project = traceur.semantics.symbols.Project;
 var SourceFile = traceur.syntax.SourceFile;
 
-var NAME = 'traceur_compile';
+var NAME = 'traceur_build';
 var DESC =
   'Compiles ECMAScript 6 projects using the google traceur compiler';
 
@@ -34,15 +34,20 @@ function generateIncludeFile(files) {
   files.forEach(function(f) {
     rv.push('module ' + traceur.generateNameForUrl(f) +
             ' from "' + f + '"');
+    rv.push('module ' + traceur.generateNameForUrl(f) +
+            ' from "' + f + '"');
+    rv.push('module ' + traceur.generateNameForUrl(f) +
+            ' from "' + f + '"');
   });
   return rv.join('\n');
 }
 
 function compileToDirectory(grunt, options, f) {
   // Iterate over all specified file groups.
-  var asts;
+  var asts, currentDir;
   var reporter = new TestErrorReporter();
   var project = new traceur.semantics.symbols.Project(f.dest);
+  var cwd = f.orig.cwd || '.';
 
   f.src.filter(function(filepath) {
     if (!grunt.file.exists(filepath)) {
@@ -52,12 +57,15 @@ function compileToDirectory(grunt, options, f) {
       return true;
     }
   }).map(function(filepath) {
-    var sourceFile = new traceur.syntax.SourceFile(
-      filepath, grunt.file.read(filepath));
-      project.addFile(sourceFile);
+    var sourceFile = new traceur.syntax.SourceFile(path.relative(cwd, filepath),
+      grunt.file.read(filepath));
+    project.addFile(sourceFile);
   });
 
+  currentDir = process.cwd();
+  process.chdir(cwd);
   asts = traceur.codegeneration.Compiler.compile(reporter, project);
+  process.chdir(currentDir);
 
   if (reporter.hadError()) {
     grunt.log.error('Compilation error!');
@@ -77,9 +85,9 @@ function compileToDirectory(grunt, options, f) {
 
     if (options.sourceMaps) {
       sourceMapDest = outFile + '.map';
-      sourceMapRoot = './';
+      sourceMapRoot = path.relative(outDir, cwd);
       sourceMapConfig = {
-        file: path.relative(outDir, file.name),
+        file: path.relative(outDir, outFile),
         sourceRoot: sourceMapRoot
       };
       sourceMapGenerator = new SourceMapGenerator(sourceMapConfig);
@@ -89,7 +97,7 @@ function compileToDirectory(grunt, options, f) {
     code = TreeWriter.write(ast, treeWriteOpts);
 
     if (options.sourceMaps) {
-      code += '\n//@ sourceMappingURL=' + sourceMapDest;
+      code += '\n//@ sourceMappingURL=' + path.relative(outDir, sourceMapDest);
       grunt.file.write(sourceMapDest, treeWriteOpts.sourceMap);
     }
 
@@ -99,22 +107,21 @@ function compileToDirectory(grunt, options, f) {
 }
 
 function compileToFile(grunt, options, f) {
-  var reporter, ast, files, currentDir;
+  var reporter, ast, files, currentDir, includeData;
   var code, writeOpts, sourceMapGenerator;
   var sourceMapDest, sourceMapRoot, sourceMapConfig;     
   var outFile = f.dest;
   var outDir = path.dirname(outFile);
-  var include = outFile + '.include.js';
-
-  files = f.src.map(function(filepath) {
-    console.log(f.cwd, filepath);
-    filepath = path.join(f.cwd, filepath);
-    return path.relative(path.dirname(include), filepath);
-  });
-  grunt.file.write(include, generateIncludeFile(files));
-  currentDir = process.cwd();
-  process.chdir(outDir);
+  var cwd = f.cwd || '.';
+  // use a temporary helper file that imports all other files to use the
+  // default traceur compilation routine
+  var include = path.join(cwd, '.includejs.tmp~');
+  files = f.src;
+  includeData = generateIncludeFile(files);
+  grunt.file.write(include, includeData);
   reporter = new TestErrorReporter();
+  currentDir = process.cwd();
+  process.chdir(cwd);
   ast = inlineAndCompileSync([path.basename(include)], null, reporter);
   process.chdir(currentDir);
   grunt.file.delete(include);
@@ -129,19 +136,23 @@ function compileToFile(grunt, options, f) {
 
   if (options.sourceMaps) {
     sourceMapDest = outFile + '.map';
-    sourceMapRoot = './';
+    sourceMapRoot = path.relative(outDir, cwd);
     sourceMapConfig = {
-      file: outFile,
+      file: path.relative(outDir, outFile),
       sourceRoot: sourceMapRoot
     };
     sourceMapGenerator = new SourceMapGenerator(sourceMapConfig);
     writeOpts = {sourceMapGenerator: sourceMapGenerator};
   }
 
-  code = TreeWriter.write(ast, writeOpts);
+  code = TreeWriter.write(ast, writeOpts).split('\n');
+  // remove the lines added by the include helper
+  code = code.slice(0, code.length - includeData.split('\n').length - 1);
+  code = code.join('\n');
+  code += '\n';
 
   if (options.sourceMaps) {
-    code += '\n//@ sourceMappingURL=' + sourceMapDest;
+    code += '\n//@ sourceMappingURL=' + path.relative(outDir, sourceMapDest);
     grunt.file.write(sourceMapDest, writeOpts.sourceMap);
   }
 
