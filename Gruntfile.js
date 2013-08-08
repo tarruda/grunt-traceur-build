@@ -1,6 +1,6 @@
 /*
- * grunt-traceur-compiler
- * https://github.com/tarruda/grunt-traceur-compiler
+ * grunt-traceur-buildr
+ * https://github.com/tarruda/grunt-traceur-build
  *
  * Copyright (c) 2013 Thiago de Arruda
  * Licensed under the MIT license.
@@ -30,6 +30,12 @@ module.exports = function(grunt) {
         sourceMaps: true
       },
       file: {
+        options: {
+          wrap: {
+            param: 'export',
+            expression: 'window.module = {}'
+          } 
+        },
         cwd: 'test',
         src: '**/*.js',
         dest: './build/build.js'

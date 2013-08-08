@@ -1,6 +1,6 @@
 /*
- * grunt-traceur-compile
- * https://github.com/tarruda/grunt-traceur-compile
+ * grunt-traceur-build
+ * https://github.com/tarruda/grunt-traceur-build
  *
  * Copyright (c) 2013 Thiago de Arruda
  * Licensed under the MIT license.
@@ -27,22 +27,30 @@ var SourceFile = traceur.syntax.SourceFile;
 
 var NAME = 'traceur_build';
 var DESC =
-  'Compiles ECMAScript 6 projects using the google traceur compiler';
+  'Compiles ECMAScript 6 (harmony) files, optionally merging and ' +
+  'generating source maps.';
 
 function generateIncludeFile(files) {
   var rv = [];
   files.forEach(function(f) {
-    rv.push('module ' + traceur.generateNameForUrl(f) +
-            ' from "' + f + '"');
-    rv.push('module ' + traceur.generateNameForUrl(f) +
-            ' from "' + f + '"');
-    rv.push('module ' + traceur.generateNameForUrl(f) +
-            ' from "' + f + '"');
+    rv.push('module ' + traceur.generateNameForUrl(f) + ' from "' + f + '"');
   });
   return rv.join('\n');
 }
 
-function compileToDirectory(grunt, options, f) {
+function wrapClosure(code, param, expression, sourceMapGenerator) {
+    code = '(function(' + (param || 'global') + ') {\n' + code;
+    code = code + '}(' + (expression || 'this') + ')();\n';
+    if (sourceMapGenerator) {
+      // adjust the mappings
+      sourceMapGenerator._mappings.forEach(function(mapping) {
+        mapping.generated.line++; 
+      });
+    }
+    return code;
+}
+
+function buildToDirectory(grunt, options, f) {
   // Iterate over all specified file groups.
   var asts, currentDir;
   var reporter = new TestErrorReporter();
@@ -96,6 +104,11 @@ function compileToDirectory(grunt, options, f) {
 
     code = TreeWriter.write(ast, treeWriteOpts);
 
+    if (options.wrap) {
+      code = wrapClosure(code, options.wrap.param, options.wrap.expression,
+        sourceMapGenerator);
+    }
+
     if (options.sourceMaps) {
       code += '\n//@ sourceMappingURL=' + path.relative(outDir, sourceMapDest);
       grunt.file.write(sourceMapDest, treeWriteOpts.sourceMap);
@@ -106,7 +119,7 @@ function compileToDirectory(grunt, options, f) {
   });
 }
 
-function compileToFile(grunt, options, f) {
+function buildToFile(grunt, options, f) {
   var reporter, ast, files, currentDir, includeData;
   var code, writeOpts, sourceMapGenerator;
   var sourceMapDest, sourceMapRoot, sourceMapConfig;     
@@ -150,6 +163,11 @@ function compileToFile(grunt, options, f) {
   code = code.slice(0, code.length - includeData.split('\n').length - 1);
   code = code.join('\n');
   code += '\n';
+
+  if (options.wrap) {
+    code = wrapClosure(code, options.wrap.param, options.wrap.expression,
+      sourceMapGenerator);
+  }
 
   if (options.sourceMaps) {
     code += '\n//@ sourceMappingURL=' + path.relative(outDir, sourceMapDest);
@@ -197,15 +215,15 @@ module.exports = function(grunt) {
 
     traceur.options.reset();
 
-    for (var k in options.parse) {
-      traceur.options[k] = options[k];
+    for (var k in options) {
+      if (k in traceur.options) traceur.options[k] = options[k];
     }
 
     this.files.forEach(function(f) {
       if (/\.js$/.test(f.orig.dest)) {
-        compileToFile(grunt, options, f);
+        buildToFile(grunt, options, f);
       } else {
-        compileToDirectory(grunt, options, f);
+        buildToDirectory(grunt, options, f);
       }
     });
   });

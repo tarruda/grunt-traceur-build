@@ -23,6 +23,14 @@ In your project's Gruntfile, add a section named `traceur_build` to the data obj
 grunt.initConfig({
   traceur_build: {
     options: {
+      wrap: { // wraps the built files into a anonymous function that has
+              // a binds 'expression' to 'param'. In the example below:
+              // (function(exports) {
+              //  /* code */
+              // })(window.mymodule = {});
+        param: 'exports',
+        expression: 'window.mymodule = {}'
+      },
       sourceMaps: true,
       deferredFunctions: true
     },
