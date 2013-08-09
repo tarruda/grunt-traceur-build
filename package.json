@@ -1,7 +1,7 @@
 {
   "name": "grunt-traceur-build",
   "description": "Compiles ECMAScript 6 (harmony) files, optionally merging and generating source maps.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "homepage": "https://github.com/tarruda/grunt-traceur-build",
   "author": {
     "name": "Thiago de Arruda",
