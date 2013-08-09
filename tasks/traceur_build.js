@@ -16,7 +16,11 @@ var traceur = require('traceur');
 // command line compiler modules private. without this we won't get
 // the automatic dependency resolution done by parsing the modules
 // 'import' statements.
-var modPath = path.resolve('node_modules/traceur/src/node/inline-module');
+try {
+  var modPath = path.resolve('node_modules/grunt-traceur-build/node_modules/traceur/src/node/inline-module');
+} catch (e) {
+  var modPath = path.resolve('node_modules/traceur/src/node/inline-module');
+}
 var inlineAndCompileSync = require(modPath).inlineAndCompileSync;
 
 var TreeWriter = traceur.outputgeneration.TreeWriter;
